@@ -1,0 +1,49 @@
+"""Authentication router — register & login."""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.user import User
+from app.models.device import Device
+from app.schemas.schemas import UserRegister, UserLogin, Token, UserOut
+from app.services.auth_service import hash_password, verify_password, create_access_token
+
+router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
+    # Check existing user
+    existing = await db.execute(select(User).where(User.email == data.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+
+    # Find or create device
+    result = await db.execute(select(Device).where(Device.serial_number == data.device_serial))
+    device = result.scalar_one_or_none()
+    if device is None:
+        device = Device(serial_number=data.device_serial)
+        db.add(device)
+        await db.flush()
+
+    user = User(
+        email=data.email,
+        hashed_password=hash_password(data.password),
+        full_name=data.full_name,
+        device_id=device.id,
+    )
+    db.add(user)
+    await db.flush()
+    return user
+
+
+@router.post("/login", response_model=Token)
+async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
+    if not user or not verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    token = create_access_token({"sub": str(user.id)})
+    return Token(access_token=token)
