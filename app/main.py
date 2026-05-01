@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="IoT Energy Monitor API",
+    title="MONITORING API",
     description="API REST pour la supervision et le contrôle d'énergie électrique",
     version="1.0.0",
     lifespan=lifespan,
@@ -50,4 +50,4 @@ app.include_router(sms.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():
-    return {"status": "ok", "service": "IoT Energy Monitor"}
+    return {"status": "ok", "service": "MONITORING"}

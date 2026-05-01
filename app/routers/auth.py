@@ -10,6 +10,8 @@ from app.models.device import Device
 from app.schemas.schemas import UserRegister, UserLogin, Token, UserOut
 from app.services.auth_service import hash_password, verify_password, create_access_token
 
+from app.models.circuit import Circuit
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -27,6 +29,11 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         device = Device(serial_number=data.device_serial)
         db.add(device)
         await db.flush()
+        
+        # Create default circuits only for new devices
+        c1 = Circuit(device_id=device.id, label="Chambre 1", circuit_index=1)
+        c2 = Circuit(device_id=device.id, label="Chambre 2", circuit_index=2)
+        db.add_all([c1, c2])
 
     user = User(
         email=data.email,

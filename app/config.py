@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 h
 
     # ── App ───────────────────────────────────────────────────
-    APP_NAME: str = "IoT Energy Monitor"
+    APP_NAME: str = "MONITORING"
     DEBUG: bool = True
 
     # ── Default billing ───────────────────────────────────────
