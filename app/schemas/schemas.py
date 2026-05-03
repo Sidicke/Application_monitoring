@@ -11,7 +11,10 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
     full_name: str = ""
-    device_serial: str = Field(description="Serial number of the physical meter")
+    device_serial: str = Field(
+        description="Serial number of the physical meter",
+        pattern=r"^SIM-\d{3}$"
+    )
 
 
 class UserLogin(BaseModel):

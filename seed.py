@@ -90,13 +90,13 @@ async def seed():
             if result.scalar_one_or_none() is None:
                 admin = User(
                     email="admin@iot.com",
-                    hashed_password=pwd_ctx.hash("admin"),
-                    full_name="Administrateur",
+                    hashed_password=pwd_ctx.hash("admin123"),
+                    full_name="Administrateur Système",
                     is_admin=True,
                     device_id=device.id,
                 )
                 session.add(admin)
-                print("Admin user created (admin@iot.com / admin)")
+                print("Admin user created (admin@iot.com / admin123)")
             else:
                 print("Admin user already exists")
 

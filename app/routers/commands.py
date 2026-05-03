@@ -88,9 +88,6 @@ async def send_circuit_command(
     if not circuit:
         raise HTTPException(status_code=404, detail=f"Circuit {circuit_index} non trouvé")
 
-    if circuit.is_shed:
-        raise HTTPException(status_code=409, detail="Circuit en délestage — commande impossible")
-
     circuit.is_on = cmd.is_on
     await db.flush()
 

@@ -56,30 +56,37 @@ async def ingest_measurement(data: MeasurementCreate, db: AsyncSession = Depends
     db.add(measurement)
     await db.flush()
 
-    # Check threshold and create alert if needed
-    # We prioritize hardware-detected alerts if provided in system_status
+    # Handle alerts sent by ESP32
     alert = None
     if data.system_status and data.system_status != "normal":
-        # Check if we should create a manual alert based on ESP report
         from app.models.alert import Alert
-        # Simple mapping for ESP status -> Alert
         severity = "info"
         msg = f"Statut détecté par le boîtier: {data.system_status}"
-        percent = 0
+        percent = None
         
+        # Determine gravity based on reported status
         if "80" in data.system_status:
-            severity = "warning"; percent = 80; msg = "Alerte 80% détectée par le boîtier"
+            severity = "info"; percent = 80; msg = "Alerte 80% détectée par le boîtier"
         elif "90" in data.system_status:
             severity = "warning"; percent = 90; msg = "Alerte 90% détectée par le boîtier"
         elif "100" in data.system_status or "shed" in data.system_status:
             severity = "critical"; percent = 100; msg = "Délestage détecté par le boîtier"
-            
-        # Optional: only create if different from last? 
-        # For now, check_threshold handles the DB logic. 
-        # Let's keep check_threshold as the safety but allow ESP status to override the message.
-        alert = await check_threshold(db, device)
-    else:
-        alert = await check_threshold(db, device)
+
+        # Create alert entry if it's a new tier
+        last_alert_q = await db.execute(
+            select(Alert).where(Alert.device_id == device.id).order_by(Alert.timestamp.desc()).limit(1)
+        )
+        last_alert = last_alert_q.scalar_one_or_none()
+        
+        if not last_alert or last_alert.threshold_percent != percent:
+            alert = Alert(
+                device_id=device.id,
+                severity=severity,
+                threshold_percent=percent,
+                message=msg,
+            )
+            db.add(alert)
+            await db.flush()
 
     # Broadcast to WebSocket clients
     ws_payload = {

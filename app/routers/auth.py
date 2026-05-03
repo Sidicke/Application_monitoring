@@ -25,12 +25,21 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     # Find or create device
     result = await db.execute(select(Device).where(Device.serial_number == data.device_serial))
     device = result.scalar_one_or_none()
-    if device is None:
+    
+    if device:
+        # Check if another user already owns this device
+        owner_check = await db.execute(select(User).where(User.device_id == device.id))
+        if owner_check.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Ce numéro de série est déjà lié à un compte")
+    else:
+        # Create new device
         device = Device(serial_number=data.device_serial)
         db.add(device)
         await db.flush()
-        
-        # Create default circuits only for new devices
+
+    # Always ensure default circuits exist for the device
+    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
+    if not cq.scalars().all():
         c1 = Circuit(device_id=device.id, label="Chambre 1", circuit_index=1)
         c2 = Circuit(device_id=device.id, label="Chambre 2", circuit_index=2)
         db.add_all([c1, c2])
