@@ -35,7 +35,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         # Create new device
         device = Device(serial_number=data.device_serial)
         db.add(device)
-        await db.flush()
+        await db.flush() # Get device ID
 
     # Always ensure default circuits exist for the device
     cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
@@ -43,6 +43,9 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         c1 = Circuit(device_id=device.id, label="Chambre 1", circuit_index=1)
         c2 = Circuit(device_id=device.id, label="Chambre 2", circuit_index=2)
         db.add_all([c1, c2])
+    
+    await db.commit() # Commit device & circuits before user
+    await db.refresh(device)
 
     user = User(
         email=data.email,
@@ -51,7 +54,8 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         device_id=device.id,
     )
     db.add(user)
-    await db.flush()
+    await db.commit()
+    await db.refresh(user)
     return user
 
 

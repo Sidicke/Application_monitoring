@@ -43,6 +43,9 @@ async def get_sms_logs(
     user: User = Depends(get_current_user),
 ):
     """Return SMS command history for a device."""
+    if user.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé : ces logs SMS ne vous appartiennent pas")
+        
     result = await db.execute(
         select(SmsLog)
         .where(SmsLog.device_id == device_id)

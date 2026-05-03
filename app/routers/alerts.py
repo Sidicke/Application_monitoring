@@ -69,6 +69,9 @@ async def get_alerts(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    if user.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé : ces alertes ne vous appartiennent pas")
+
     result = await db.execute(
         select(Alert)
         .where(Alert.device_id == device_id)
@@ -88,6 +91,11 @@ async def acknowledge_alert(
     alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alerte non trouvée")
+    
+    # Ownership Check
+    if user.device_id != alert.device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+        
     alert.acknowledged = True
     await db.flush()
     return alert
@@ -103,6 +111,11 @@ async def delete_alert(
     alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alerte non trouvée")
+        
+    # Ownership Check
+    if user.device_id != alert.device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+        
     await db.delete(alert)
     await db.flush()
 

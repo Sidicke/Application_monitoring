@@ -42,6 +42,10 @@ async def get_device(
     device = result.scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=404, detail="Appareil non trouvé")
+    
+    if user.device_id != device.id:
+        raise HTTPException(status_code=403, detail="Accès refusé : cet appareil n'est pas lié à votre compte")
+        
     return await _device_with_circuits(db, device)
 
 

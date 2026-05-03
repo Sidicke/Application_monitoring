@@ -22,6 +22,9 @@ async def get_billing_history(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    if user.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé : cet historique ne vous appartient pas")
+        
     from app.models.billing import Billing
     result = await db.execute(
         select(Billing)
@@ -43,5 +46,9 @@ async def create_bill(
     device = result.scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=404, detail="Appareil non trouvé")
+    
+    if user.device_id != device.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+        
     bill = await generate_bill(db, device, data.period_start, data.period_end)
     return bill

@@ -7,10 +7,12 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database import get_db
+from app.models.user import User
 from app.models.device import Device
 from app.models.circuit import Circuit
 from app.models.measurement import Measurement
 from app.schemas.schemas import MeasurementCreate, MeasurementOut
+from app.services.auth_service import get_current_user, get_current_admin_user
 from app.services.alert_service import check_threshold
 from app.services.ws_manager import manager
 
@@ -122,8 +124,12 @@ async def get_measurements(
     start: Optional[datetime] = Query(None, description="Start datetime filter"),
     end: Optional[datetime] = Query(None, description="End datetime filter"),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Return recent measurements for a device, with optional circuit and time filters."""
+    if user.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Accès refusé : ces mesures ne vous appartiennent pas")
+        
     query = select(Measurement).where(Measurement.device_id == device_id)
 
     if circuit_id is not None:

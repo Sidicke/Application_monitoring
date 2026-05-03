@@ -5,16 +5,16 @@ import os
 # Add parent directory to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal, engine, Base
+from app.database import async_session, engine, Base
 from app.models.user import User
 from app.models.device import Device
 from app.models.circuit import Circuit
 from app.services.auth_service import hash_password
 
 async def seed_admin():
-    async with SessionLocal() as db:
+    async with async_session() as db:
         # 1. Create Admin Device
-        admin_serial = "MONITOR-ADMIN-001"
+        admin_serial = "SIM-000"
         result = await db.execute(select(Device).where(Device.serial_number == admin_serial))
         device = result.scalar_one_or_none()
         
