@@ -12,7 +12,7 @@ class Device(Base):
     name = Column(String(128), default="Compteur principal")
     is_on = Column(Boolean, default=True)
     threshold_kwh = Column(Float, default=100.0)
-    kwh_price = Column(Float, default=0.12)
+    kwh_price = Column(Float, default=110.0)
     currency = Column(String(8), default="XOF")
     system_status = Column(String(16), default="normal")  # normal | alert | shedding
     comm_mode = Column(String(8), default="wifi")         # wifi | gsm

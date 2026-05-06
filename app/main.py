@@ -28,7 +28,8 @@ async def lifespan(app: FastAPI):
         "ALTER TABLE measurements ADD COLUMN IF NOT EXISTS circuit_id INTEGER",
         "ALTER TABLE alerts ADD COLUMN IF NOT EXISTS circuit_id INTEGER",
         "ALTER TABLE alerts ADD COLUMN IF NOT EXISTS threshold_percent INTEGER",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+        "UPDATE devices SET kwh_price = 110.0 WHERE kwh_price = 0.12"
     ]
     async with engine.begin() as conn:
         for q in queries:
