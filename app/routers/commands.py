@@ -43,7 +43,10 @@ async def send_command(
     # Notify connected clients
     await manager.broadcast(device.id, {
         "type": "command",
-        "data": {"is_on": device.is_on},
+        "data": {
+            "is_on": device.is_on,
+            "circuits": {str(c.circuit_index): c.is_on for c in circuits}
+        },
     })
 
     return DeviceOut(
