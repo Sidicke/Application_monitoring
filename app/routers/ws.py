@@ -11,7 +11,12 @@ async def websocket_endpoint(websocket: WebSocket, device_id: int):
     await manager.connect(device_id, websocket)
     try:
         while True:
-            # Keep connection alive — client can send pings
-            await websocket.receive_text()
-    except WebSocketDisconnect:
+            data = await websocket.receive_json()
+            # Handle state updates from hardware via WebSocket (Faster than HTTP POST)
+            if data.get("type") == "hardware_state_update":
+                await manager.broadcast(device_id, {
+                    "type": "hardware_update",
+                    "data": data.get("data")
+                })
+    except (WebSocketDisconnect, Exception):
         manager.disconnect(device_id, websocket)

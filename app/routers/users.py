@@ -26,5 +26,7 @@ async def update_profile(
         user.full_name = data.full_name
     if data.email is not None:
         user.email = data.email
+    if data.fcm_token is not None:
+        user.fcm_token = data.fcm_token
     await db.flush()
     return user

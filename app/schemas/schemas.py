@@ -34,6 +34,7 @@ class UserOut(BaseModel):
     is_admin: bool
     is_active: bool = True
     device_id: Optional[int] = None
+    fcm_token: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -45,6 +46,7 @@ class UserAdminOut(UserOut):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    fcm_token: Optional[str] = None
 
 
 # ── Circuit ───────────────────────────────────────────────────

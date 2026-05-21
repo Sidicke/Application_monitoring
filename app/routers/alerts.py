@@ -48,7 +48,7 @@ async def create_hardware_alert(
     await db.flush()
     await db.commit()
 
-    # Broadcast to App
+    # Broadcast to WebSocket
     await manager.broadcast(device.id, {
         "type": "hardware_alert",
         "data": {
@@ -58,6 +58,21 @@ async def create_hardware_alert(
             "timestamp": alert.timestamp.isoformat()
         }
     })
+
+    # Send Push Notification via Firebase
+    try:
+        from app.services.fcm_service import send_push_notification
+        user_res = await db.execute(select(User).where(User.device_id == device.id))
+        target_user = user_res.scalar_one_or_none()
+        if target_user and target_user.fcm_token:
+            await send_push_notification(
+                token=target_user.fcm_token,
+                title=f"ALERTE : {device.name}",
+                body=alert.message,
+                data={"alert_id": str(alert.id), "severity": alert.severity}
+            )
+    except Exception:
+        pass # Don't block if Firebase fails
 
     return alert
 

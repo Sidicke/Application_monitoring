@@ -13,6 +13,7 @@ from app.models.circuit import Circuit
 from app.database import async_session
 from app.services.auth_service import hash_password
 from app.models import circuit, sms_log  # noqa: F401
+from app.services.fcm_service import init_firebase
 
 
 @asynccontextmanager
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI):
         "ALTER TABLE alerts ADD COLUMN IF NOT EXISTS circuit_id INTEGER",
         "ALTER TABLE alerts ADD COLUMN IF NOT EXISTS threshold_percent INTEGER",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(512)",
         "UPDATE devices SET kwh_price = 110.0 WHERE kwh_price = 0.12"
     ]
     async with engine.begin() as conn:
@@ -54,6 +56,7 @@ async def lifespan(app: FastAPI):
                 session.add(new_admin)
                 print("Default admin created: admin@monitoring.bj / admin2026!")
 
+    init_firebase()
     yield
     await engine.dispose()
 

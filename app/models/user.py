@@ -14,3 +14,4 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     device_id = Column(Integer, ForeignKey("devices.id"), nullable=True, unique=True)
+    fcm_token = Column(String(512), nullable=True)
