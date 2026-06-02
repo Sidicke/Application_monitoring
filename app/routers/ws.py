@@ -7,6 +7,7 @@ router = APIRouter(tags=["WebSocket"])
 
 
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ async def websocket_endpoint(websocket: WebSocket, device_id: int):
         while True:
             try:
                 text = await websocket.receive_text()
-                import json
                 data = json.loads(text)
                 
                 msg_type = data.get("type")
