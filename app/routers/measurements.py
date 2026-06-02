@@ -40,9 +40,7 @@ async def ingest_measurement(data: MeasurementCreate, db: AsyncSession = Depends
         if circuit:
             circuit_id = circuit.id
 
-    # Update device system_status & comm_mode if provided by ESP
-    if data.system_status:
-        device.system_status = data.system_status
+    # DO NOT override system_status from data directly to prevent Simulator threshold conflicts.
     if data.comm_mode:
         device.comm_mode = data.comm_mode
 
@@ -58,37 +56,24 @@ async def ingest_measurement(data: MeasurementCreate, db: AsyncSession = Depends
     db.add(measurement)
     await db.flush()
 
-    # Handle alerts sent by ESP32
-    alert = None
-    if data.system_status and data.system_status != "normal":
-        from app.models.alert import Alert
-        severity = "info"
-        msg = f"Statut détecté par le boîtier: {data.system_status}"
-        percent = None
-        
-        # Determine gravity based on reported status
-        if "80" in data.system_status:
-            severity = "info"; percent = 80; msg = "Alerte 80% détectée par le boîtier"
-        elif "90" in data.system_status:
-            severity = "warning"; percent = 90; msg = "Alerte 90% détectée par le boîtier"
-        elif "100" in data.system_status or "shed" in data.system_status:
-            severity = "critical"; percent = 100; msg = "Délestage détecté par le boîtier"
-
-        # Create alert entry if it's a new tier
-        last_alert_q = await db.execute(
-            select(Alert).where(Alert.device_id == device.id).order_by(Alert.timestamp.desc()).limit(1)
-        )
-        last_alert = last_alert_q.scalar_one_or_none()
-        
-        if not last_alert or last_alert.threshold_percent != percent:
-            alert = Alert(
-                device_id=device.id,
-                severity=severity,
-                threshold_percent=percent,
-                message=msg,
+    # Calculate backend threshold and generate alert if needed
+    alert = await check_threshold(db, device)
+    
+    # If a new alert is generated, send FCM notification to the user
+    if alert:
+        user_result = await db.execute(select(User).where(User.device_id == device.id))
+        user = user_result.scalar_one_or_none()
+        if user and user.fcm_token:
+            from app.services.fcm_service import send_push_notification
+            import asyncio
+            asyncio.create_task(
+                send_push_notification(
+                    token=user.fcm_token,
+                    title="Alerte Énergie ⚡",
+                    body=alert.message,
+                    data={"type": "alert", "severity": alert.severity}
+                )
             )
-            db.add(alert)
-            await db.flush()
 
     # Broadcast to WebSocket clients
     ws_payload = {
