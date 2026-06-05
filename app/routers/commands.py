@@ -92,6 +92,7 @@ async def send_circuit_command(
         raise HTTPException(status_code=404, detail=f"Circuit {circuit_index} non trouvé")
 
     circuit.is_on = cmd.is_on
+    circuit.is_shed = False  # Manual override lifts the shed
     await db.flush()
 
     # Notify connected clients
@@ -100,6 +101,7 @@ async def send_circuit_command(
         "data": {
             "circuit_index": circuit.circuit_index,
             "is_on": circuit.is_on,
+            "is_shed": False,
             "label": circuit.label,
         },
     })

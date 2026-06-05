@@ -89,4 +89,15 @@ async def update_device_settings(
     if data.currency is not None:
         device.currency = data.currency
     await db.flush()
+    
+    # Notify connected clients of threshold/settings change
+    from app.services.ws_manager import manager
+    await manager.broadcast(device.id, {
+        "type": "settings_update",
+        "data": {
+            "threshold_kwh": device.threshold_kwh,
+            "kwh_price": device.kwh_price
+        }
+    })
+    
     return await _device_with_circuits(db, device)

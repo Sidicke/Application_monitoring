@@ -21,10 +21,17 @@ class ConnectionManager:
 
     async def broadcast(self, device_id: int, data: dict):
         """Send data to all clients watching a device."""
-        for ws in self.active.get(device_id, []):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        connections = list(self.active.get(device_id, []))
+        logger.info(f"WS Broadcast to device {device_id} ({len(connections)} clients): {data.get('type')}")
+        
+        for ws in connections:
             try:
                 await ws.send_text(json.dumps(data))
-            except Exception:
+            except Exception as e:
+                logger.warning(f"WS send failed for client on device {device_id}: {e}")
                 self.disconnect(device_id, ws)
 
 

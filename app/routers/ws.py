@@ -19,10 +19,12 @@ async def websocket_endpoint(websocket: WebSocket, device_id: int):
     from app.routers.measurements import ingest_measurement, update_device_hardware_state
     from app.routers.alerts import create_hardware_alert
 
+    import asyncio
     try:
         while True:
             try:
-                text = await websocket.receive_text()
+                # Wait for message with 25s timeout for keepalive
+                text = await asyncio.wait_for(websocket.receive_text(), timeout=25.0)
                 data = json.loads(text)
                 
                 msg_type = data.get("type")
@@ -61,15 +63,24 @@ async def websocket_endpoint(websocket: WebSocket, device_id: int):
                             await db.rollback()
                             logger.error(f"WS DB Error alert: {e}")
 
+            except asyncio.TimeoutError:
+                # Keepalive loop
+                try:
+                    await websocket.send_text(json.dumps({"type": "ping", "timestamp": str(asyncio.get_event_loop().time())}))
+                except Exception as e:
+                    logger.warning(f"Failed to send keepalive ping to device {device_id}: {e}")
+                    break # Connection dead
+
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON via WS from device {device_id}: {text}")
             except WebSocketDisconnect:
                 break # Client disconnected normally
             except Exception as e:
                 logger.error(f"Error processing WS message for {device_id}: {e}")
+                break
                 
-    except WebSocketDisconnect:
-        pass
+    except Exception as outer_e:
+        logger.error(f"WS outer exception for {device_id}: {outer_e}")
     finally:
         manager.disconnect(device_id, websocket)
 
