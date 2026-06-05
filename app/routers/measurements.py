@@ -141,6 +141,7 @@ async def get_device_control_status(device_serial: str, db: AsyncSession = Depen
     circuits = cq.scalars().all()
     
     return {
+        "id": device.id,
         "is_on": device.is_on,
         "threshold_kwh": device.threshold_kwh,
         "kwh_price": device.kwh_price,
