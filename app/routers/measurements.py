@@ -105,7 +105,7 @@ async def ingest_measurement(data: MeasurementCreate, db: AsyncSession = Depends
 async def get_measurements(
     device_id: int,
     limit: int = Query(100, ge=1, le=1000),
-    circuit_id: Optional[int] = Query(None, description="Filter by circuit ID"),
+    circuit_index: Optional[int] = Query(None, description="Filter by circuit index"),
     start: Optional[datetime] = Query(None, description="Start datetime filter"),
     end: Optional[datetime] = Query(None, description="End datetime filter"),
     db: AsyncSession = Depends(get_db),
@@ -117,8 +117,18 @@ async def get_measurements(
         
     query = select(Measurement).where(Measurement.device_id == device_id)
 
-    if circuit_id is not None:
-        query = query.where(Measurement.circuit_id == circuit_id)
+    if circuit_index is not None:
+        cq = await db.execute(
+            select(Circuit).where(
+                Circuit.device_id == device_id,
+                Circuit.circuit_index == circuit_index
+            )
+        )
+        circuit = cq.scalar_one_or_none()
+        if circuit:
+            query = query.where(Measurement.circuit_id == circuit.id)
+        else:
+            return []
     if start is not None:
         query = query.where(Measurement.timestamp >= start)
     if end is not None:
