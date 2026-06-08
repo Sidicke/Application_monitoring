@@ -16,7 +16,7 @@ router = APIRouter(prefix="/devices", tags=["Devices"])
 
 async def _device_with_circuits(db: AsyncSession, device: Device) -> DeviceOut:
     """Helper: build DeviceOut with circuits list."""
-    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
+    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id).order_by(Circuit.circuit_index))
     circuits = cq.scalars().all()
     return DeviceOut(
         id=device.id,

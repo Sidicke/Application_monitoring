@@ -33,7 +33,7 @@ async def send_command(
     device.is_on = cmd.is_on
     
     # Load circuits and propagate state
-    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
+    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id).order_by(Circuit.circuit_index))
     circuits = cq.scalars().all()
     for c in circuits:
         c.is_on = cmd.is_on
@@ -121,7 +121,7 @@ async def get_device_status(
     if not device:
         raise HTTPException(status_code=404, detail="Appareil non trouvé")
 
-    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
+    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id).order_by(Circuit.circuit_index))
     circuits = cq.scalars().all()
 
     return DeviceOut(

@@ -147,7 +147,7 @@ async def get_device_control_status(device_serial: str, db: AsyncSession = Depen
     if not device:
         raise HTTPException(status_code=404, detail="Appareil non trouvé")
         
-    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id))
+    cq = await db.execute(select(Circuit).where(Circuit.device_id == device.id).order_by(Circuit.circuit_index))
     circuits = cq.scalars().all()
     
     return {
